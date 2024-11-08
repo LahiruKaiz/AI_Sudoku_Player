@@ -1,245 +1,159 @@
-import numpy as np
 import random
+import numpy as np
+import copy
 
-class Cell:
-    
-    def __init__(self, row, col):
-        
-        self.value = None
-        self.x = row  
-        self.y = col
-        self.sub = (self.x // 3, self.y // 3) #Subgrid that the cell contains
-        self.posibilities = [num for num in range(1,10)] #Posibilities of digits that can be put to the cell
-        
-    def setvalue(self, value):
-        self.value = value
-        self.posibilities = []
-        
-    def resetcell(self):
-        self.posibilities = [num for num in range(1,10)]
-        self.value = None
-        
-    def posi_length(self):
-        return len(self.posibilities)
-    
-    def update(self, row, col, value):
-        # Updating the postibilities
-        if (self.x == row or self.y == col or self.sub == (row // 3, col // 3)) and (value in self.posibilities):
-            self.posibilities.remove(value)
-            
-
-class gridGenerate():
+class GridGenerate():
     
     def __init__(self):
         
-        self.pool = [num for _ in range(9) for num in range(1,10)]
-        self.grid_array = [[0 for _ in range(9)] for _ in range(9)]
+        self.MainGrid = [[[num for num in range(1,10)] for _ in range(9)] for _ in range(9)]
+        self.NumPool = [num for _ in range(9) for num in range(1,10)]
+        
+        num = self.NumPool[0]
+        self.NumPool.pop(0)
+        
+        i, j = random.randint(0,8), random.randint(0,8)
+        
+        self.MainGrid[i][j] = num
+        
+        self._UpdateArray(self.MainGrid, i, j, num)
         
         try:
-            while True:
+            while len(self.NumPool) > 0:
+                for x in range(9):
+                    for y in range(9):
+                        if isinstance(self.MainGrid[x][y], list) and len(self.MainGrid[x][y]) == 1:
+                            num = self.MainGrid[x][y][0]
+                            self.MainGrid[x][y] = num
+                            self._UpdateArray(self.MainGrid, x, y, num)
+                            self.NumPool.remove(num)
                 
-                remain = self._GetRemain()
-                
-                if len(remain) == 0:
+                if self._CheckComplete():
                     raise StopIteration
                 
-                Select_num = random.choice(remain)
-                Eligible_Pos = self._Eligible(Select_num)
-                Least_Pos = self._LeastPosibilties(Eligible_Pos)
-                Filling_Pos = random.choice(Least_Pos)
-                i, j = Filling_Pos
-                self.grid_array[i][j] = Select_num
-                self._CheckSinglePos()
-                
-                a = np.array(self.grid_array)
-                print(a)
-                
+                self._GridShow()
+                print(self.NumPool)
+                num = self.NumPool[0]
+                Positions = self._Eligible(num)
+                MinimumPos = self._LeastPosi(Positions)
+                RandPos = random.choice(MinimumPos)
+                i, j = RandPos
+                self.MainGrid[i][j] = num
+                self._UpdateArray(self.MainGrid, i, j, num)
+                self.NumPool.pop(0)
+            
         except StopIteration:
-            print("Grid generation is complete.")
+            self._GridShow()
             
             
-    def _CheckSinglePos(self):
-        ActiveGrid = []
-        for x in range(9):
-                for y in range(9):
-                    ActiveGrid.append(Cell(x, y))
+                        
+        a = np.array(self.MainGrid)
+        print(a)
+    
+    def _CheckComplete(self):
+        for i in range(9):
+            for j in range(9):
+                if isinstance(self.MainGrid[i][j], list):
+                    return False
+        return True
+    
+    def _GridShow(self):
+        a = np.zeros((9,9))
         
-        self._UpdatingFromArray(ActiveGrid)
+        for i in range(9):
+            for j in range(9):
+                if not isinstance(self.MainGrid[i][j], list):
+                    a[i,j] = self.MainGrid[i][j]
         
-        for item in ActiveGrid:
-            if len(item.posibilities) == 1:
-                self.grid_array[item.x][item.y] = item.posibilities[0]
+        print(a)
     
     
-    def _LeastPosibilties(self, Positions):
-        ActiveGrid = []
-        for x in range(9):
-                for y in range(9):
-                    ActiveGrid.append(Cell(x, y))
-                    
-        map = {}
-        for id, item in enumerate(ActiveGrid):
-            map.update({(item.x, item.y): id})
-                  
-        self._UpdatingFromArray(ActiveGrid)
+    def _LeastPosi(self, positions):
+        # Use a list comprehension to find the minimum length of possibilities
+        min_length = min(len(self.MainGrid[i][j]) for i, j in positions)
         
-        Posibilties = []
-        for pos in Positions:
-            cell = ActiveGrid[map[pos]]
-            Posibilties.append(len(cell.posibilities))
-            
-        Minimum = min(Posibilties)
-        valid = []
-        for id, value in enumerate(Posibilties):
-            if value == Minimum:
-                valid.append(Positions[id])
-        
-        return valid
+        # Return positions with the minimum length
+        return [(i, j) for i, j in positions if len(self.MainGrid[i][j]) == min_length]
     
     
     def _Eligible(self, number):
+        
         Positions = []
         
-        for i in range(len(self.grid_array)):
-            for j in range(len(self.grid_array[i])):
-                if self.grid_array[i][j] == 0:
+        for i in range(9):
+            for j in range(9):
+                if isinstance(self.MainGrid[i][j], list) and (number in self.MainGrid[i][j]):
                     Positions.append((i,j))
-                    
+        
         for pos in Positions:
-            ActiveGrid = []
-            
-            for x in range(9):
-                for y in range(9):
-                    ActiveGrid.append(Cell(x, y))
-       
-            self._UpdatingFromArray(ActiveGrid)
-
-            self._PositionUpdate(ActiveGrid, pos, number)
-
-            if not self._GridCheck(ActiveGrid):
+            Dummy = copy.deepcopy(self.MainGrid)
+            x, y = pos
+            self._UpdateArray(Dummy, x, y, number)
+            if not self._GridCheck(Dummy):
                 Positions.remove(pos)
-        
+                
         return Positions
-    
-    
-    def _PositionUpdate(self, grid, position, number):
-        
-        i,j = position
-        for item in grid:
-            if (item.x, item.y) == position:
-                continue
-            
-            item.update(i, j, number)
             
             
-    
-    def _GridCheck(self, Grid):
-        map = {}
-        for id, item in enumerate(Grid):
-            map.update({(item.x, item.y): id})
-        
-        ar = np.zeros((9,9), dtype=int)
-        for i in Grid:
-            if i.value != None:
-                ar[i.x, i.y] = i.value
-        for r in range(9):
-            row = ar[r, :]
-            idx1 = np.where(row == 0)
-            if len(idx1[0]) != 0:
-                row = list(set(row.tolist()))
-                row = row[1:]
-                    
-                MissingValues = list(set([1,2,3,4,5,6,7,8,9]) - set(row))
-                
-                pool = []
-                
-                for i in idx1[0]:
-                    cordinate = (r, i)
-                    pos = Grid[map[cordinate]].posibilities.copy()
-                    pool.extend(pos)
-                
-                pos = list(set(pool))
+    def _GridCheck(self, array):
+        # Check rows
+        for i in range(9):
+            if not self._check_units(array[i]):
+                return False
 
-                for m in MissingValues:
-                    if not m in pos:
-                        return False
-                        
-                        
-        for c in range(9):
-            col = ar[:, c]
-            idx2 = np.where(col == 0)
-            if len(idx2[0]) != 0:
-                col = list(set(col.tolist()))
-                col = col[1:]
-                    
-                MissingValues = list(set([1,2,3,4,5,6,7,8,9]) - set(col))
-                
-                pool = []
-                for i in idx2[0]:
-                    cordinate = (r, i)
-                    pos = Grid[map[cordinate]].posibilities.copy()
-                    pool.extend(pos)
-                
-                pos = list(set(pool))
+        # Check columns
+        for j in range(9):
+            column = [array[i][j] for i in range(9)]
+            if not self._check_units(column):
+                return False
 
-                for m in MissingValues:
-                    if not m in pos:
-                        return False
-        
+        # Check 3x3 subgrids
         for row in range(0, 9, 3):
             for col in range(0, 9, 3):
-                subgrid = ar[row:row+3, col:col+3].flatten()
-                idx3 = np.where(subgrid == 0)
-                if len(idx3[0]) != 0:
-                    subgrid = list(set(subgrid.tolist()))
-                    subgrid = subgrid[1:]
-                        
-                    MissingValues = list(set([1,2,3,4,5,6,7,8,9]) - set(subgrid))
-                    
-                    pool = []
-                    for i in idx3[0]:
-                        cordinate = (r, i)
-                        pos = Grid[map[cordinate]].posibilities.copy()
-                        pool.extend(pos)
-                    
-                    pos = list(set(pool))
+                subgrid = []
+                for r in range(row, row + 3):
+                    for c in range(col, col + 3):
+                        subgrid.append(array[r][c])
+                if not self._check_units(subgrid):
+                    return False
 
-                    for m in MissingValues:
-                        if not m in pos:
-                            return False
-        
         return True
-    
-    
-    def _UpdatingFromArray(self, grid):
-        map = {}
-        for id, item in enumerate(grid):
-            map.update({(item.x, item.y): id})
-        
-        for i in range(len(self.grid_array)):
-            for j in range(len(self.grid_array[i])):
-                if self.grid_array[i][j] != 0:
-                    pos = grid[map[(i,j)]]
-                    pos.setvalue(self.grid_array[i][j])
-                    self._PositionUpdate(grid= grid, position=(i,j), number=self.grid_array[i][j])
 
-                    # if not self._GridCheck(grid):
-                    #     print("Error while updating from main array")
+    def _check_units(self, unit):
+        seen = set()
+        for item in unit:
+            if isinstance(item, list):
+                seen.update(item)
+            else:
+                if item in seen or item < 1 or item > 9:
+                    return False  # Duplicate or out of range
+                seen.add(item)
+
+        expected_values = set(range(1, 10))
+        return expected_values.issubset(seen)
                         
-    
-    
-    def _GetRemain(self):
         
-        ls = self.pool.copy()
         
-        for raws in self.grid_array:
-            for item in raws:
-                if item != 0:
-                    ls.remove(item)
+    def _UpdateArray(self, array, x, y, number):
+        
+        for item in array[x]:
+            if isinstance(item, list) and (number in item):
+                item.remove(number)
+        
+        for i in range(9):
+            if isinstance(array[i][y], list) and (number in array[i][y]):
+                array[i][y].remove(number)
+                
+        subgrid_row_start = (x // 3) * 3
+        subgrid_col_start = (y // 3) * 3
+
+        for row in range(subgrid_row_start, subgrid_row_start + 3):
+            for col in range(subgrid_col_start, subgrid_col_start + 3):
+                if isinstance(array[row][col], list) and (number in array[row][col]):
+                    array[row][col].remove(number)
                     
-        return ls
-            
+
             
 if __name__ == '__main__':
     
-    g = gridGenerate()
+    GridGenerate()
