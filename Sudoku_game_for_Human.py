@@ -71,7 +71,7 @@ class Sudoku:
         
     
     def _PrepGrid(self):
-        Number_of_empty_cells = 1
+        Number_of_empty_cells = 37
         Positions = [(i, j) for i in range(9) for j in range(9)]
         
         Random_Positions = random.sample(Positions, Number_of_empty_cells)
