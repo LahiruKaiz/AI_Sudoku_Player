@@ -94,7 +94,7 @@ class GridGenerate():
         
         # Validate positions by checking if placing the number would keep the grid valid
         for pos in Positions:
-            Dummy = copy .deepcopy(self.MainGrid)  # Create a copy of the grid
+            Dummy = copy.deepcopy(self.MainGrid)  # Create a copy of the grid
             x, y = pos  
             self._UpdateArray(Dummy, x, y, number)  
             if not self._GridCheck(Dummy):  # Check if the grid remains valid
@@ -163,5 +163,73 @@ class GridGenerate():
 
 if __name__ == '__main__':
     
-    g= GridGenerate()
-    g.GridShow()
+  def find_duplicate_positions(sudoku):
+    duplicate_positions = []
+    
+    size = 9  # Standard Sudoku size
+    subgrid_size = 3  # Size of the subgrid
+
+    # Check rows for duplicates
+    for r in range(size):
+        seen = {}
+        for c in range(size):
+            num = sudoku[r][c]
+            if num != 0:  # Ignore zeros
+                if num not in seen:
+                    seen[num] = []
+                seen[num].append((r, c))
+
+        # Add positions of duplicates to the list
+        for positions in seen.values():
+            if len(positions) > 1:
+                duplicate_positions.extend(positions)
+
+    # Check columns for duplicates
+    for c in range(size):
+        seen = {}
+        for r in range(size):
+            num = sudoku[r][c]
+            if num != 0:  # Ignore zeros
+                if num not in seen:
+                    seen[num] = []
+                seen[num].append((r, c))
+
+        # Add positions of duplicates to the list
+        for positions in seen.values():
+            if len(positions) > 1:
+                duplicate_positions.extend(positions)
+
+    # Check subgrids for duplicates
+    for grid_row in range(subgrid_size):
+        for grid_col in range(subgrid_size):
+            seen = {}
+            for r in range(subgrid_size):
+                for c in range(subgrid_size):
+                    num = sudoku[grid_row * subgrid_size + r][grid_col * subgrid_size + c]
+                    if num != 0:  # Ignore zeros
+                        if num not in seen:
+                            seen[num] = []
+                        seen[num].append((grid_row * subgrid_size + r, grid_col * subgrid_size + c))
+
+            # Add positions of duplicates to the list
+            for positions in seen.values():
+                if len(positions) > 1:
+                    duplicate_positions.extend(positions)
+
+    return list(set(duplicate_positions))
+
+# Example usage:
+sudoku_grid = [
+    [5, 3, 0, 0, 7, 0, 0, 0, 0],
+    [6, 0, 0, 1, 9, 5, 0, 0, 0],
+    [0, 9, 8, 0, 1, 0, 0, 6, 0],
+    [8, 0, 0, 0, 6, 0, 0, 0, 3],
+    [4, 0, 0, 8, 0, 3, 0, 0, 1],
+    [7, 1, 0, 1, 2, 0, 0, 0, 6],
+    [0, 6, 0, 0, 0, 0, 2, 8, 0],
+    [0, 0, 0, 4, 1, 9, 0, 0, 5],
+    [0, 0, 0, 0, 8, 0, 0, 7, 9]
+]
+
+duplicate_positions = find_duplicate_positions(sudoku_grid)
+print(set(duplicate_positions))
