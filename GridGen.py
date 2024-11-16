@@ -162,4 +162,7 @@ class GridGenerate():
                     array[row][col].remove(number)  # Remove number from the possibilities
 
 if __name__ == '__main__':
-    pass
+    
+    a= ((1,2),3)
+   
+    print(a[-1], a[0], a[0][0], a[0][1])

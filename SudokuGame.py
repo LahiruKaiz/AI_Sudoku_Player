@@ -25,6 +25,7 @@ class SudokuAI:
         self.filling_space = [[0 for _ in range(9)] for _ in range(9)]
         self.game_over = False
         self.completed = 0
+        self.attempts = 0
         self.UiUpdate()
     
     
@@ -214,6 +215,7 @@ class SudokuAI:
         
         if self.is_fill_pos(pos):
             self.update_filling_space(pos, num)
+            self.attempts += 1
             dup, com = self._FindDuplicatePositions()
             
             if len(dup) != 0:
@@ -240,16 +242,19 @@ if __name__ == '__main__':
             if event.type == pygame.QUIT:
                 running = False
                 
-        string = input("pos and num: ")
-        ls= string.split(' ')
-        
-        act = ((ls[0],ls[1]), ls[-1])
-        
-        re, done = game.PlayStep(act)
-        print(re)
-        
-        if done:
-            running = False
+            string = input("pos and num: ")
+            ls= string.split(',')
+            v = []
+            for i in ls:
+                v.append(int(i))
+            
+            act= ((v[0], v[1]), v[-1])
+            
+            re, done = game.PlayStep(act)
+            print(act, re)
+            
+            if done:
+                running = False
         
         
     
